@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Usage{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% for t in times %}
+        {% for e in eqnt %}
+        <p>
+                {{ t }},
+                {{ e }},
+                {{ usage[(t, e)]  }}
+        </p>
+        {% endfor %}
+{% endfor %}
+{% endblock %}

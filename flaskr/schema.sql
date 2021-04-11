@@ -15,3 +15,11 @@ CREATE TABLE post (
   body TEXT NOT NULL,
   FOREIGN KEY (author_id) REFERENCES user (id)
 );
+
+CREATE TABLE touch_data (
+  user_id INTEGER NOT NULL,
+  time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  eqnt_id INTEGER NOT NULL,
+  set_busy INTEGER NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES user (id)
+);
