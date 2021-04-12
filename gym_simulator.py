@@ -1,10 +1,16 @@
 import random
 import numpy as np
 import datetime
+from inspect import currentframe, getframeinfo
 
-eqnt_cnt = 5
+def linenum():
+    cf = currentframe()
+    return cf.f_back.f_lineno
+
+eqnt_cnt = 7
 appch_cnt = 5
-user_cnt = 1000
+user_cnt = 50
+trains_per_week = 3
 
 def normal(x,mu,sigma):
         return ( 2.*np.pi*sigma**2. )**-.5 * np.exp( -.5 * (x-mu)**2. / sigma**2. )
@@ -30,13 +36,17 @@ class Eqnt:
     def add_to_queue(self, user):
         self.queue.append(user)
 
-    def is_last_in_queue(self, user):
-        if user is self.queue[-1]:
+    def can_use_eqnt(self, user):
+        if user is self.queue[0] and self.curr_user == None:
             return True
         return False
 
-    def pop_from_queue(self, user):
-        self.queue.pop()
+    def use_eqnt(self, user):
+        self.queue.pop(0)
+        self.curr_user = user
+
+    def stop_using_eqnt(self, user):
+        self.curr_user = None
 
     def time_wait(self, t):
         time_end = t
@@ -121,7 +131,7 @@ class Schedule:
     @staticmethod
     def gen_random_schedule():
         all_days_of_week = [i for i in range(7)]
-        trains_per_week = 3
+        global trains_per_week
         days_of_week = random.sample(all_days_of_week, trains_per_week)
 
         trains = [Train.gen_random_train() for i in range(trains_per_week)]
@@ -155,13 +165,13 @@ class User:
 
     def appch_entry(self, t):
         eqnt = self.curr_appch.eqnt
-        eqnt.curr_user = self
+        eqnt.use_eqnt(self)
         self.appch_start = t
         self.appch_end = t + datetime.timedelta(minutes = self.curr_appch.time_len)
 
     def appch_exit(self, t):
         eqnt = self.curr_appch.eqnt
-        eqnt.curr_user = None
+        eqnt.stop_using_eqnt(self)
         self.curr_appch = None
         self.appch_start = None
         self.appch_end = None
@@ -209,8 +219,7 @@ def sim_step(t, u):
         if (not eqnt.is_in_queue(u)):
             eqnt.add_to_queue(u)
 
-        if eqnt.is_last_in_queue(u):
-            eqnt.pop_from_queue(u)
+        if eqnt.can_use_eqnt(u):
             u.appch_entry(t)
         else:
             return
@@ -226,30 +235,23 @@ class Stats:
     time_usage = [] # [[(time, usage), ...], ..., []], i-th [] for Equipment-i
     is_alloced = False
 
-    #  def alloc(t):
-        #  if Stats.is_alloced:
-            #  return
-        #  Stats.is_alloced = True
-        #  Stats.time_usage = [[] for i in range(len(Eqnt.list))]
+    def alloc():
+        if Stats.is_alloced:
+            return
+        Stats.is_alloced = True
+        Stats.time_usage = [[] for i in range(len(Eqnt.list))]
 
     def update(t):
-        #Stats.alloc()
-        #  for i, e in enumerate(Eqnt.list):
-            #  arr = Stats.time_usage[i]
-            #  arr.append((t, e.time_wait(t)))
-
-        if t.minute == 0 or t.minute == 30:
-            e = Eqnt.list[0]
-            print(t.hour, ":", t.minute, e.time_wait(t))
-            if len(e.queue) != 0:
-                print("HI\n\n\n\n", len(e.queue))
+        Stats.alloc()
+        for i, e in enumerate(Eqnt.list):
+            arr = Stats.time_usage[i]
+            arr.append((t, e.time_wait(t)))
 
 def sim_main():
     User.fill_list()
     for t in time_generator():
         for u in User.list:
             sim_step(t, u)
-
         Stats.update(t)
 
 sim_main()
