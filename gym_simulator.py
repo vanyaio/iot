@@ -1,7 +1,9 @@
 import random
+import requests
 import numpy as np
 import datetime
 from inspect import currentframe, getframeinfo
+import matplotlib.pyplot as plt
 
 def linenum():
     cf = currentframe()
@@ -58,8 +60,7 @@ class Eqnt:
 
         if (time_end is t):
             return 0
-        delta = time_end - t
-        return (time_end - t)
+        return (time_end - t).seconds // 60 % 60
 
     @classmethod
     def fill_list(cls):
@@ -141,6 +142,7 @@ class Schedule:
 class User:
     list = []
     is_filled = False
+    ids_cnt = 0
 
     def __init__(self, sched):
         self.sched = sched
@@ -149,6 +151,9 @@ class User:
         self.curr_appch = None
         self.appch_start = None
         self.appch_end = None
+
+        User.ids_cnt += 1
+        self.id = User.ids_cnt
 
     def train_entry(self, train):
         train.reload_appch_iter()
@@ -168,9 +173,11 @@ class User:
         eqnt.use_eqnt(self)
         self.appch_start = t
         self.appch_end = t + datetime.timedelta(minutes = self.curr_appch.time_len)
+        User.touch_data_send(self.id, eqnt.id, t, 1)
 
     def appch_exit(self, t):
         eqnt = self.curr_appch.eqnt
+        User.touch_data_send(self.id, eqnt.id, t, 0)
         eqnt.stop_using_eqnt(self)
         self.curr_appch = None
         self.appch_start = None
@@ -185,9 +192,20 @@ class User:
             cls.list.append(User(Schedule.gen_random_schedule()))
         cls.is_filled = True
 
+    @staticmethod
+    def touch_data_send(user_id, eqnt_id, time, set_busy):
+        API_ENDPOINT = "http://127.0.0.1:5000/new_touch_data"
+        data = dict()
+        data['user_id'] = user_id
+        data['eqnt_id'] = eqnt_id
+        data['time'] = time
+        data['set_busy'] = set_busy
+        r = requests.post(url = API_ENDPOINT, data = data)
+
 def time_generator():
-    epoch = 0
-    t = datetime.datetime.fromtimestamp(epoch)
+    #  epoch = 0
+    #  t = datetime.datetime.fromtimestamp(epoch)
+    t = datetime.datetime(2021, 3, 6, 0, 0, 0, 0)
     yield t
     #while t.month != 2:
     while t.day != 8:
@@ -230,22 +248,35 @@ def sim_step(t, u):
     else:
         u.appch_exit(t)
 
-
 class Stats:
-    time_usage = [] # [[(time, usage), ...], ..., []], i-th [] for Equipment-i
+    time_wait = [] # [[(time, wait), ...], ..., []], i-th [] for Equipment-i
+                   # time is datetime, wait is minutes
     is_alloced = False
 
     def alloc():
         if Stats.is_alloced:
             return
         Stats.is_alloced = True
-        Stats.time_usage = [[] for i in range(len(Eqnt.list))]
+        Stats.time_wait = [[] for i in range(len(Eqnt.list))]
 
     def update(t):
         Stats.alloc()
         for i, e in enumerate(Eqnt.list):
-            arr = Stats.time_usage[i]
+            arr = Stats.time_wait[i]
             arr.append((t, e.time_wait(t)))
+
+    def draw():
+        arr = Stats.time_wait[0]
+        #  t_minute = t.time().hour * 60 + t.time().minute
+        #  x = [e[0] for i, e in enumerate(arr) if i % 30 == 0]
+        #  x = [t.time().hour * 60 + t.time().minute for t in x]
+
+        #  y = [e[1] for i, e in enumerate(arr) if i % 5 == 0]
+        #  x = [4 * i for i in range(len(y))]
+        #  plt.plot(x, y, color='red')
+        #  plt.plot([x[-1] + xp for xp in x], y, color='green')
+        #  plt.plot([x[-1] + xp for xp in x], [0.5 * yp for yp in y], color='blue')
+        #  plt.show()
 
 def sim_main():
     User.fill_list()
@@ -255,3 +286,4 @@ def sim_main():
         Stats.update(t)
 
 sim_main()
+Stats.draw()

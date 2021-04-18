@@ -5,13 +5,11 @@
 {% endblock %}
 
 {% block content %}
-{% for t in times %}
-        {% for e in eqnt %}
-        <p>
-                {{ t }},
-                {{ e }},
-                {{ usage[(t, e)]  }}
-        </p>
-        {% endfor %}
+{% for e in eqnt %}
+<p>
+	{{ time }},
+	{{ e }},
+	{{ usage[(time, e)]  }}
+</p>
 {% endfor %}
 {% endblock %}

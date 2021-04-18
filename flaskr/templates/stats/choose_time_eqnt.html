@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Predict usage{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="get" action="{{ url_for('stats.usage') }}" >
+    <input value="19/04/21 01:55" name="time" id="time">
+    <input type="submit" value="Predict!">
+  </form>
+{% endblock %}
