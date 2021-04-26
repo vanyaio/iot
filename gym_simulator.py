@@ -205,10 +205,11 @@ class User:
 def time_generator():
     #  epoch = 0
     #  t = datetime.datetime.fromtimestamp(epoch)
-    t = datetime.datetime(2021, 3, 6, 0, 0, 0, 0)
+    #t = datetime.datetime(2021, 3, 6, 0, 0, 0, 0)
+    t = datetime.datetime(2021, 4, 1, 0, 0, 0, 0)
     yield t
     #while t.month != 2:
-    while t.day != 8:
+    while t.day != 15:
         t += datetime.timedelta(minutes = 1)
         yield t
 

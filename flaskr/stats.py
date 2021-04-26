@@ -14,30 +14,46 @@ bp = Blueprint('stats', __name__)
 def index():
     return redirect(url_for('stats.choose_time_eqnt'))
 
+eqnt_cnt = 7
 @bp.route('/choose_time_eqnt')
 #  @login_required
 def choose_time_eqnt():
-    eqnt_cnt = 7 #TODO
-    return render_template('stats/choose_time_eqnt.html')
-    #  return redirect(url_for('stats.usage'))
+    global eqnt_cnt
+    eqnt = {i : 'Machine' + str(i) for i in range(eqnt_cnt)}
+    return render_template('stats/choose_time_eqnt.html', eqnt=eqnt)
 
 @bp.route('/usage', methods=('GET', 'POST'))
 #  @login_required
 def usage():
-    #time and eqnt from request
-    cnt = 5
+    global eqnt_cnt
+
     if request.method == 'GET':
-        #  time_str = request.form['time']
         time_str = request.args.get('time', '')
-        #18/09/19 01:55
+        #18/09/19 01:55 - format
         time = datetime.datetime.strptime(time_str, '%d/%m/%y %H:%M')
-        print('hey')
-    else:
-        time = datetime.datetime.now()
-        print('hey1')
-    eqnt = [i for i in range(3)]
-    usage = get_usage(time, eqnt)
-    return render_template('stats/usage.html', time=time, eqnt=eqnt, usage=usage)
+
+        eqnt = []
+        for eid in range(eqnt_cnt):
+            if request.args.get('eid' + str(eid), '') == 'on':
+                eqnt.append(int(eid))
+
+        predict = request.args.get('predict', '')
+        if predict == '':
+            predict_if_happened = None
+        else:
+            predict_if_happened = eval(predict)#predict 'True' or 'F..'
+
+        if predict_if_happened is not None and predict_if_happened:
+            usage = get_usage_if_happened(time, eqnt)
+            return str(usage)
+        if predict_if_happened is not None and not predict_if_happened:
+            usage = get_usage(time, eqnt)
+            return str(usage)
+
+        if predict_if_happened is None:
+            usage = get_usage(time, eqnt)
+            return render_template('stats/usage.html', time=time, \
+                                   eqnt=eqnt, usage=usage)
 
 @bp.route('/new_touch_data', methods=('GET', 'POST'))
 #@login_required #TODO: admin account
@@ -77,10 +93,14 @@ def test_db():
 
     return ret
 
-def get_some_weeks_ago_in_db(time):
+def get_some_weeks_ago_in_db(time, predict_if_happened=False):
     db = get_db()
 
-    t = time
+    if predict_if_happened:
+        t = time - datetime.timedelta(days = 7)
+    else:
+        t = time
+
     while True:
         data = db.execute(
             'SELECT * FROM touch_data d '
@@ -92,12 +112,12 @@ def get_some_weeks_ago_in_db(time):
         t = t - datetime.timedelta(days = 7)
 
 #ML:
-def get_usage_for_one_e(time, eqnt_id):
+def get_usage_for_one_e(time, eqnt_id, predict_if_happened=False):
     db = get_db()
     delta_mins = 60
 
     #  t = datetime.datetime(2021, 3, 1, 18, 53, 0, 0)
-    t = get_some_weeks_ago_in_db(time)
+    t = get_some_weeks_ago_in_db(time, predict_if_happened=predict_if_happened)
     tl = t - datetime.timedelta(minutes = delta_mins)
 
     data = db.execute(
@@ -148,3 +168,7 @@ def get_usage_for_one_e(time, eqnt_id):
 def get_usage(time, eqnt_ids):
     #time is datetime, eqnt is iterable
     return { (time, e) : get_usage_for_one_e(time, e)  for e in eqnt_ids }
+
+def get_usage_if_happened(time, eqnt_ids):
+    #time is datetime, eqnt is iterable
+    return { (time, e) : get_usage_for_one_e(time, e, True)  for e in eqnt_ids }
