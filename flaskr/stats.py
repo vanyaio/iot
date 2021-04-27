@@ -79,10 +79,15 @@ def usage():
 #@login_required #TODO: admin account
 def new_touch_data():
     if request.method == 'POST':
+        print(request.content_type)
+        print(request.form)
         user_id = int(request.form['user_id'])
-        time = request.form['time']
         eqnt_id = int(request.form['eqnt_id'])
         set_busy = int(request.form['set_busy'])
+        if 'time' not in request.form:
+            time = datetime.datetime.now()
+        else:
+            time = request.form['time']
         db = get_db()
         db.execute(
             'INSERT INTO touch_data (user_id, time, eqnt_id, set_busy)'
