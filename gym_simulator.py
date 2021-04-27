@@ -10,15 +10,17 @@ def linenum():
     return cf.f_back.f_lineno
 
 eqnt_cnt = 7
-appch_cnt = 5
-user_cnt = 50
-trains_per_week = 3
+appch_cnt = eqnt_cnt
+user_cnt = 28
+trains_per_week = 5
 
 def normal(x,mu,sigma):
         return ( 2.*np.pi*sigma**2. )**-.5 * np.exp( -.5 * (x-mu)**2. / sigma**2. )
 
 def gen_train_start_time():
-    return int(np.random.normal(19 * 60 , 2 * 60, 1)[0]) % (24 * 60)
+    #return int(np.random.normal(19 * 60 , 3.25 * 60, 1)[0]) % (24 * 60)
+    return random.randint(19 * 60 - 2 * 60, 19 * 60 + 2 * 60)
+    #return int(np.random.normal(24 * 60 , 19 * 60, 3 * 60)[0]) % (24 * 60)
 
 class Eqnt:
     list = []
@@ -83,7 +85,7 @@ class Approach:
         idx = random.randint(0, eqnt_len - 1)
 
         eqnt = Eqnt.list[idx]
-        time_len = 12
+        time_len = 2
 
         return Approach(eqnt, time_len)
 
@@ -95,18 +97,46 @@ class Train:
 
     def reload_appch_iter(self):
         self.iter = self.next_appch_gen()
+        #print(id(self.iter))
 
     def next_appch(self):
         return next(self.iter)
 
     def next_appch_gen(self):
-        for a in self.appch_list:
-            yield a
+        used = {a : False for a in self.appch_list}
+
+        cnt = 0
+        while True:
+            all_used = True
+            for a in used.keys():
+                if not used[a]:
+                    all_used = False
+                    break
+            if all_used:
+                break
+
+            min_len, ret_appch = 100000000, None
+            random.shuffle(self.appch_list)
+            for a in self.appch_list:
+                if used[a]:
+                    continue
+                if len(a.eqnt.queue) < min_len:
+                    min_len = len(a.eqnt.queue)
+                    ret_appch = a
+            if ret_appch is None:
+                raise Exception('Value error!')
+            used[ret_appch] = True
+            cnt += 1
+            if (cnt > len(self.appch_list) + 3):
+                raise Exception('Value error!')
+            yield ret_appch
 
     @staticmethod
     def gen_random_train():
         global appch_cnt
-        appch_list = [Approach.gen_random_approach() for i in range(appch_cnt)]
+        Eqnt.fill_list()
+        appch_list = [Approach(Eqnt.list[i], 2) for i in range(appch_cnt)]
+        #appch_list = [Approach.gen_random_approach() for i in range(appch_cnt)]
         return Train(appch_list, gen_train_start_time())
 
 class Schedule:
@@ -192,6 +222,27 @@ class User:
             cls.list.append(User(Schedule.gen_random_schedule()))
         cls.is_filled = True
 
+    @classmethod
+    def update_list(cls, t):
+        if not (t.day == 8 and t.hour == 4 and t.minute == 0 \
+                and t.second == 0 and t.microsecond == 0):
+            return
+
+        print("UPDATE HAPPENING")
+        del_users = []
+        for user in cls.list:
+            if user.in_train:
+                continue
+            if random.randint(0, 8) != 1:
+                continue
+            del_users.append(user)
+
+        for del_user in del_users:
+            for i, user in enumerate(cls.list):
+                if del_user is user:
+                    cls.list[i] = User(Schedule.gen_random_schedule())
+                    break
+
     @staticmethod
     def touch_data_send(user_id, eqnt_id, time, set_busy):
         API_ENDPOINT = "http://127.0.0.1:5000/new_touch_data"
@@ -261,10 +312,11 @@ class Stats:
         Stats.time_wait = [[] for i in range(len(Eqnt.list))]
 
     def update(t):
-        Stats.alloc()
-        for i, e in enumerate(Eqnt.list):
-            arr = Stats.time_wait[i]
-            arr.append((t, e.time_wait(t)))
+        pass
+        #  Stats.alloc()
+        #  for i, e in enumerate(Eqnt.list):
+            #  arr = Stats.time_wait[i]
+            #  arr.append((t, e.time_wait(t)))
 
     def draw():
         arr = Stats.time_wait[0]
@@ -285,6 +337,7 @@ def sim_main():
         for u in User.list:
             sim_step(t, u)
         Stats.update(t)
+        User.update_list(t)
 
 sim_main()
-Stats.draw()
+#  Stats.draw()

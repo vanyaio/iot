@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Main{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<br>
+    <a class="action" href="{{ url_for('stats.choose_time_eqnt') }}">Usage Forecast</a>
+<br>
+    <a class="action" href="{{ url_for('stats.last_beep') }}">Last beep (test)</a>
+{% endblock %}

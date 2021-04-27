@@ -28,12 +28,16 @@ def send_and_get_error(eid, d):
     for k in usage_real.keys():
         real_minutes = usage_real[k]
         pred_minutes = usage_pred[k]
-        return abs(real_minutes - pred_minutes)
+        return real_minutes, pred_minutes, abs(real_minutes - pred_minutes)
 
 def main():
     for eid in range(eqnt_cnt):
         print("-----Eqnt {0}------".format(eid))
         for d in range(8, 15):
-            print("day {0}, error {1}".format(d, send_and_get_error(eid, d)))
+            real_minutes, pred_minutes, error = send_and_get_error(eid, d)
+            print("day {0}, real wait {1}, pred wait {2}, error {3}".format(d, \
+                                                                 real_minutes, \
+                                                                 pred_minutes, \
+                                                                 error))
 
 main()

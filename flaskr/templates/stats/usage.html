@@ -5,11 +5,11 @@
 {% endblock %}
 
 {% block content %}
+Prediction for {{ time }}
 {% for e in eqnt %}
 <p>
-	{{ time }},
-	{{ e }},
-	{{ usage[(time, e)]  }}
+	Exercise Machine {{ e }} wait time is
+	{{ usage[(time, e)]  }} minutes
 </p>
 {% endfor %}
 {% endblock %}

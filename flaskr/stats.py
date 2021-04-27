@@ -12,7 +12,27 @@ bp = Blueprint('stats', __name__)
 @bp.route('/')
 @login_required
 def index():
-    return redirect(url_for('stats.choose_time_eqnt'))
+    #return redirect(url_for('stats.choose_time_eqnt'))
+    return render_template('stats/index.html')
+
+@bp.route('/last_beep')
+@login_required
+def last_beep():
+    id = g.user['id']
+    db = get_db()
+
+    data = db.execute(
+        'SELECT * FROM touch_data d '
+        'WHERE d.user_id = ? '
+        'ORDER BY time DESC;',
+        (id, )
+    ).fetchone()
+
+    print(data['user_id'], data['time'], data['eqnt_id'], data['set_busy'])
+    ret = "user {0}, time {1}, equipment {2}, set busy {3}".format(\
+           data['user_id'], data['time'], data['eqnt_id'], data['set_busy'])
+    #  return str(data)
+    return ret 
 
 eqnt_cnt = 7
 @bp.route('/choose_time_eqnt')
