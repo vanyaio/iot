@@ -40,6 +40,8 @@ def last_beep():
         'ORDER BY time DESC;',
         (id, )
     ).fetchone()
+    if data is None:
+        return "No beeps happened yet"
 
     print(data['user_id'], data['time'], data['eqnt_id'], data['set_busy'])
     ret = "user {0}, time {1}, equipment {2}, set busy {3}".format(\
