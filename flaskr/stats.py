@@ -15,6 +15,19 @@ def index():
     #return redirect(url_for('stats.choose_time_eqnt'))
     return render_template('stats/index.html')
 
+@bp.route('/get_id_by_username', methods=('GET', 'POST'))
+#  @login_required
+def get_id_by_username():
+    if request.method == 'POST':
+        db = get_db()
+        username = request.form['username']
+        data = db.execute(
+            'SELECT * FROM user u '
+            'WHERE u.username = ? ',
+            (username, )
+        ).fetchone()
+        return str(data['id'])
+
 @bp.route('/last_beep')
 @login_required
 def last_beep():
@@ -79,8 +92,6 @@ def usage():
 #@login_required #TODO: admin account
 def new_touch_data():
     if request.method == 'POST':
-        print(request.content_type)
-        print(request.form)
         user_id = int(request.form['user_id'])
         eqnt_id = int(request.form['eqnt_id'])
         set_busy = int(request.form['set_busy'])
