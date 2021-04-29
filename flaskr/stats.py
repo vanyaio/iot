@@ -49,18 +49,48 @@ def last_beep():
     #  return str(data)
     return ret 
 
-eqnt_cnt = 7
+#eqnt_cnt = 7
+eqnt_id_to_name = { 0 : "Dumbbells",\
+          1 : "Barbell",\
+          2 : "Horizontal seated leg press",\
+          3 : "Lat pulldown",\
+          4 : "Chest press",\
+          5 : "Hanging leg raise",\
+          6 : "Seated overhead press"  }
+def get_eqnt_cnt():
+    db = get_db()
+
+    data = db.execute(
+        'SELECT eqnt_id FROM touch_data d '
+        'WHERE d.eqnt_id = ? ;',
+        (6, )
+    ).fetchone()
+    if data is None:
+        print("hello none")
+    else:
+        print("hello not none", str(data['eqnt_id']))
+
+    data = db.execute(
+        'SELECT eqnt_id FROM touch_data '
+        'ORDER BY eqnt_id DESC;'
+    ).fetchone()
+
+    return int(data['eqnt_id']) + 1
+
 @bp.route('/choose_time_eqnt')
 #  @login_required
 def choose_time_eqnt():
-    global eqnt_cnt
+    eqnt_cnt = get_eqnt_cnt()
     eqnt = {i : 'Machine' + str(i) for i in range(eqnt_cnt)}
-    return render_template('stats/choose_time_eqnt.html', eqnt=eqnt)
+    return render_template('stats/choose_time_eqnt.html', eqnt=eqnt, \
+                           eqnt_id_to_name=eqnt_id_to_name)
 
 @bp.route('/usage', methods=('GET', 'POST'))
 #  @login_required
 def usage():
-    global eqnt_cnt
+    #global eqnt_cnt
+    eqnt_cnt = get_eqnt_cnt()
+    global eqnt_id_to_name
 
     if request.method == 'GET':
         time_str = request.args.get('time', '')
@@ -88,7 +118,8 @@ def usage():
         if predict_if_happened is None:
             usage = get_usage(time, eqnt)
             return render_template('stats/usage.html', time=time, \
-                                   eqnt=eqnt, usage=usage)
+                                   eqnt=eqnt, usage=usage, \
+                                   eqnt_id_to_name=eqnt_id_to_name)
 
 @bp.route('/new_touch_data', methods=('GET', 'POST'))
 #@login_required #TODO: admin account
