@@ -8,7 +8,7 @@
 Prediction for {{ time }}
 {% for e in eqnt %}
 <p>
-	Exercise Machine {{ e }} wait time is
+	{{ eqnt_id_to_name[e] }} wait time is
 	{{ usage[(time, e)]  }} minutes
 </p>
 {% endfor %}

@@ -6,10 +6,10 @@
 
 {% block content %}
   <form method="get" action="{{ url_for('stats.usage') }}" >
-    <input value="19/04/21 01:55" name="time" id="time">
+    <input value="24/04/21 19:00" name="time" id="time">
 
     {% for eid in eqnt %}
-    Machine{{eid}} <input type="checkbox" id="eid{{eid}}" name="eid{{eid}}">
+    {{eqnt_id_to_name[eid]}} <input type="checkbox" id="eid{{eid}}" name="eid{{eid}}">
     {% endfor %}
 
     <input type="submit" value="Predict!">
