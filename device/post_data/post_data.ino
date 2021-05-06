@@ -113,7 +113,7 @@ void setup() {
   Serial.print(F("Using the following key:"));
   printHex(key.keyByte, MFRC522::MF_KEY_SIZE);
   
-
+  WiFi.mode(WIFI_STA);
   WiFi.begin(STASSID, STAPSK);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -124,13 +124,15 @@ void setup() {
   Serial.print("Connected! IP address: ");
   Serial.println(WiFi.localIP());
 
+  WiFi.mode(WIFI_OFF);
+  WiFi.forceSleepBegin();
+  delay(1); //Needed, at least in my tests WiFi doesn't power off without this for some reason
+
   busy = false;
 
 }
 
 void loop() {
-  // wait for WiFi connection
-  if ((WiFi.status() == WL_CONNECTED)) {
 
       // Look for new cards
     if ( ! rfid.PICC_IsNewCardPresent())
@@ -178,53 +180,65 @@ void loop() {
     // Stop encryption on PCD
     rfid.PCD_StopCrypto1();
     
+    WiFi.forceSleepWake();
+    WiFi.mode(WIFI_STA);  
+    wifi_station_connect();
+    WiFi.begin(STASSID, STAPSK); 
 
-    
-    WiFiClient client;
-    HTTPClient http;
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("Wifi on");
 
-    Serial.print("[HTTP] begin...\n");
-    // configure traged server and url
-    http.begin(client, SERVER); //HTTP
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    // start connection and send HTTP header and body
-    char buf[100];
-    busy = !busy;
-    int res = snprintf(buf,sizeof(buf),"user_id=%u&eqnt_id=%u&set_busy=%i",uidDec,EQNT_ID,busy);  
-    
-    if (res >= 0 && res < sizeof(buf))   
+    if ((WiFi.status() == WL_CONNECTED))
     {
-      int httpCode = http.POST(buf);
-      Serial.print("[HTTP] POST: ");
-      Serial.println(buf);
-      // httpCode will be negative on error
-      if (httpCode > 0) {
-        // HTTP header has been send and Server response header has been handled
-        Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+      WiFiClient client;
+      HTTPClient http;
   
-        // file found at server
-        if (httpCode == HTTP_CODE_OK) {
-          String payload = http.getString();
-        }
-      } 
-      else 
+      Serial.print("[HTTP] begin...\n");
+      // configure traged server and url
+      http.begin(client, SERVER); //HTTP
+      http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  
+      // start connection and send HTTP header and body
+      char buf[100];
+      busy = !busy;
+      int res = snprintf(buf,sizeof(buf),"user_id=%u&eqnt_id=%u&set_busy=%i",uidDec,EQNT_ID,busy);  
+      
+      if (res >= 0 && res < sizeof(buf))   
       {
-        Serial.printf("[HTTP] POST failed, error: %s\n", http.errorToString(httpCode).c_str());
-      }
-  
-      http.end();
+          int httpCode = http.POST(buf);
+          Serial.print("[HTTP] POST: ");
+          Serial.println(buf);
+          // httpCode will be negative on error
+          if (httpCode > 0) {
+            // HTTP header has been send and Server response header has been handled
+            Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+      
+            // file found at server
+            if (httpCode == HTTP_CODE_OK) {
+              String payload = http.getString();
+            }
+          } 
+          else 
+          {
+            Serial.printf("[HTTP] POST failed, error: %s\n", http.errorToString(httpCode).c_str());
+          }
+      
+          http.end();
+        }
+        else
+        {
+          Serial.printf("buf error");
+        }
     }
     else
     {
-      Serial.printf("buf error");
+        Serial.println("Error in WiFi connection");
     }
-  
-  }
-
-  else
-  {
-    Serial.printf("Error in WiFi connection");
-  }
-
+        WiFi.mode(WIFI_OFF);
+        WiFi.forceSleepBegin();
+        delay(1); //Needed, at least in my tests WiFi doesn't power off without this for some reason
+        Serial.println("Wifi off");
 }
